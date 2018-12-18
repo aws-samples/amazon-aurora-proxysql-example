@@ -1,0 +1,152 @@
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this
+# software and associated documentation files (the "Software"), to deal in the Software
+# without restriction, including without limitation the rights to use, copy, modify,
+# merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+# PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Parameters:
+  DatabaseName:
+    Type: String
+    Default: proxysqlexample
+    MinLength: 1
+    MaxLength: 64
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*" 
+  DatabaseUser:
+    Type: String
+    MinLength: 1
+    MaxLength: 16
+    Default: proxysql
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*" 
+  DatabasePassword:
+    Type: String
+    MinLength: 8
+    MaxLength: 41
+    Default: pr0xySQL01Cred
+    NoEcho: true
+    AllowedPattern: "[a-zA-Z0-9]*" 
+  DbInstanceSize:
+    Type: String
+    Description: Database instance size
+    AllowedValues:
+      - db.r4.large 	
+      - db.r4.xlarge 	
+      - db.r4.2xlarge 	
+      - db.r4.4xlarge 	
+      - db.r4.8xlarge 	
+      - db.r4.16xlarge
+    Default: "db.r4.large"
+  ProjectTag:
+    Type: String
+    Description: Tag to apply to created resources for visibility
+    Default: ProxySQLDemo
+  SubnetPrivateA: 
+    Description: "First private subnet"
+    Type: "AWS::EC2::Subnet::Id"
+  SubnetPrivateB: 
+    Description: "Second private subnet"
+    Type: "AWS::EC2::Subnet::Id"
+  DBFirewall:
+    Type: String
+Resources:
+  DBAuroraCluster:
+    Type: "AWS::RDS::DBCluster"
+    DependsOn: DBClusterParams
+    Properties:
+      DatabaseName: !Ref DatabaseName
+      Engine: aurora-mysql
+      MasterUsername: !Ref DatabaseUser
+      MasterUserPassword: !Ref DatabasePassword
+      DBSubnetGroupName: !Ref DBSubnets
+      DBClusterParameterGroupName: !Ref DBClusterParams
+      VpcSecurityGroupIds: 
+        - !Ref DBFirewall
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  DBAuroraOne:
+    Type : "AWS::RDS::DBInstance"
+    DependsOn: DBParamGroup
+    Properties:
+      DBClusterIdentifier: !Ref DBAuroraCluster
+      Engine: aurora-mysql
+      DBInstanceClass: !Ref DbInstanceSize
+      DBSubnetGroupName: !Ref DBSubnets
+      DBParameterGroupName: !Ref DBParamGroup
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  DBAuroraTwo:
+    Type : "AWS::RDS::DBInstance"
+    DependsOn: DBParamGroup
+    Properties:
+      DBClusterIdentifier: !Ref DBAuroraCluster
+      Engine: aurora-mysql
+      DBInstanceClass: !Ref DbInstanceSize
+      DBSubnetGroupName: !Ref DBSubnets
+      DBParameterGroupName: !Ref DBParamGroup
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  DBAuroraThree:
+    Type : "AWS::RDS::DBInstance"
+    DependsOn: DBParamGroup
+    Properties:
+      DBClusterIdentifier: !Ref DBAuroraCluster
+      Engine: aurora-mysql
+      DBInstanceClass: !Ref DbInstanceSize
+      DBSubnetGroupName: !Ref DBSubnets
+      DBParameterGroupName: !Ref DBParamGroup
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  DBSubnets:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties: 
+      DBSubnetGroupDescription: "Subnets for RDS cluster"
+      SubnetIds:
+        - !Ref SubnetPrivateA
+        - !Ref SubnetPrivateB
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  DBParamGroup:
+    Type: "AWS::RDS::DBParameterGroup"
+    Properties:
+      Description: Moodle Parameter Group
+      Family: aurora-mysql5.7
+      Parameters:
+        innodb_file_format: Barracuda
+        innodb_large_prefix: 1
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  DBClusterParams:
+    Type: "AWS::RDS::DBClusterParameterGroup"
+    Properties:
+      Parameters:
+        innodb_file_per_table: 1
+        character_set_database: utf8mb4
+      Family: aurora-mysql5.7
+      Description: Moodle Cluster Parameter Group
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+
+
+Outputs:
+  DBClusterEndpoint:
+    Description: Aurora cluster endpoint
+    Value: !GetAtt DBAuroraCluster.Endpoint.Address
+  DBReadEndpoint:
+    Description: Aurora cluster read endpoint
+    Value: !GetAtt DBAuroraCluster.ReadEndpoint.Address

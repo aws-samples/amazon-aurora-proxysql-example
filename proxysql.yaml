@@ -1,0 +1,370 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this
+# software and associated documentation files (the "Software"), to deal in the Software
+# without restriction, including without limitation the rights to use, copy, modify,
+# merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+# PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Description: >
+  This template builds a proxysql middleware layer for an RDS cluster.
+
+Parameters:
+  MinSize:
+    Type: String
+    Description: Minimum number of proxysql servers
+    Default: "1"
+  MaxSize:
+    Type: String
+    Description: Maximum number of proxysql servers
+    Default: "2"
+  DesiredCapacity:
+    Type: String
+    Description: Nominal Size of proxysql Env
+    Default: "1"
+  InstanceSize:
+    Type: String
+    Description: Instance size
+    Default: "t2.large"
+  VPC:
+    Type: "AWS::EC2::VPC::Id"
+    Description: "VPC ID for creating the application"
+  SubnetPublicA: 
+    Description: "First public subnet"
+    Type: "AWS::EC2::Subnet::Id"
+  SubnetPublicB: 
+    Description: "Second public subnet"
+    Type: "AWS::EC2::Subnet::Id"
+  SubnetPrivateA: 
+    Description: "First private subnet"
+    Type: "AWS::EC2::Subnet::Id"
+  SubnetPrivateB: 
+    Description: "Second private subnet"
+    Type: "AWS::EC2::Subnet::Id"
+  keyname:
+    Type: AWS::EC2::KeyPair::KeyName
+  DatabaseName:
+    Type: String
+    Default: proxysqlexample
+    MinLength: 1
+    MaxLength: 64
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*" 
+  DatabaseUser:
+    Type: String
+    MinLength: 1
+    MaxLength: 16
+    Default: proxysql
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*" 
+  DatabasePassword:
+    Type: String
+    MinLength: 8
+    MaxLength: 41
+    Default: pgp0o1Cred
+    NoEcho: true
+    AllowedPattern: "[a-zA-Z0-9]*" 
+  ClusterEndpoint:
+    Type: String
+  ReaderEndpoint:
+    Type: String
+  ProxySQLFirewall:
+    Type: String
+  SshFirewall:
+    Type: String
+  ProjectTag:
+    Type: String
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      "AMALINUX" : "ami-1853ac65" # AMALINUX SEP 2016
+    us-east-2:
+      "AMALINUX" : "ami-71ca9114" # AMALINUX SEP 2016
+    us-west-1:
+      "AMALINUX" : "ami-de347abe" # AMALINUX SEP 2016
+    us-west-2:
+      "AMALINUX" : "ami-d874e0a0" # AMALINUX SEP 2017
+    ca-central-1:
+      "AMALINUX" : "ami-eb20928f" # AMALINUX SEP 2016 v01
+    eu-west-1:
+      "AMALINUX" : "ami-d41d58a7" # AMALINUX SEP 2016
+    eu-central-1:
+      "AMALINUX" : "ami-0044b96f" # AMALINUX SEP 2016
+    eu-west-2:
+      "AMALINUX" : "ami-bfe0eadb" # AMALINUX SEP 2016 v01
+    ap-southeast-1:
+      "AMALINUX" : "ami-7243e611" # AMALINUX SEP 2016
+    ap-southeast-2:
+      "AMALINUX" : "ami-55d4e436" # AMALINUX SEP 2016
+    ap-northeast-2:
+      "AMALINUX" : "ami-a04297ce" # AMALINUX SEP 2016
+    ap-northeast-1:
+      "AMALINUX" : "ami-1a15c77b" # AMALINUX SEP 2016
+    ap-south-1:
+      "AMALINUX" : "ami-cacbbea5" # AMALINUX SEP 2016
+    sa-east-1:
+      "AMALINUX" : "ami-b777e4db" # AMALINUX SEP 2016
+Resources:
+  ProxySQLLogs:
+      Type: AWS::Logs::LogGroup
+      DeletionPolicy: Retain
+      Properties:
+        RetentionInDays: 7
+  AutoScalingGroup:
+    CreationPolicy:
+      ResourceSignal:
+        Count: !Ref DesiredCapacity
+        Timeout: "PT5M"
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      Cooldown: "300"
+      DesiredCapacity: !Ref DesiredCapacity
+      HealthCheckGracePeriod: "300"
+      HealthCheckType: ELB
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      TargetGroupARNs:
+        - !Ref ELBTargetGroup
+      MaxSize: !Ref MaxSize
+      MinSize: !Ref MinSize
+      VPCZoneIdentifier:
+        - !Ref SubnetPrivateA
+        - !Ref SubnetPrivateB
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+          PropagateAtLaunch: 'true'
+  LaunchConfiguration:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMALINUX]
+      InstanceType: !Ref InstanceSize
+      KeyName: !Ref keyname
+      SecurityGroups:
+        - !Ref ProxySQLFirewall
+        - !Ref SshFirewall
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/bash
+
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfiguration --configsets proxysql --region ${AWS::Region}
+            curl 127.0.0.1/index.html | grep proxysql
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          proxysql:
+            - "install_www"
+            - "install_ProxySQLserver"
+            - "start_ProxySQLserver"
+            - install_logs
+            - "configure_ProxySQLserver"
+        install_www:
+          packages:
+            yum:
+              httpd: []
+          files:
+            /var/www/html/index.html:
+              content: "Hello from proxysql"
+          services:
+            sysvinit:
+              httpd:
+                enabled: "true"
+                ensureRunning: "true"
+        install_ProxySQLserver:
+          packages:
+            yum:
+              mysql: []
+          files:
+            /tmp/install_proxysql.sh:
+              content:
+                !Sub |
+                  #!/bin/bash -xe
+
+                  wget -P /tmp/ https://github.com/sysown/proxysql/releases/download/v2.0.0-rc2/proxysql-rc2-2.0.0-1-centos7.x86_64.rpm
+
+                  #Install proxysql
+                  sudo yum install -y /tmp/proxysql-rc2-2.0.0-1-centos7.x86_64.rpm
+              mode: 000500
+              owner: root
+              group: root
+          commands:
+            install_ProxySQLserver:
+              command: ./install_proxysql.sh
+              cwd: /tmp
+              ignoreErrors: false
+        start_ProxySQLserver:
+          services:
+            sysvinit:
+              proxysql:
+                enabled: true
+                ensureRunning: true
+        install_logs:
+          packages:
+            yum:
+              awslogs: []
+          files:
+            /etc/awslogs/awslogs.conf:
+              content: !Sub |
+                [general]
+                state_file= /var/awslogs/state/agent-state
+
+                [/var/log/cloud-init.log]
+                file = /var/log/cloud-init.log
+                log_group_name = ${ProxySQLLogs}
+                log_stream_name = {instance_id}/cloud-init.log
+                datetime_format =
+
+                [/var/log/cloud-init-output.log]
+                file = /var/log/cloud-init-output.log
+                log_group_name = ${ProxySQLLogs}
+                log_stream_name = {instance_id}/cloud-init-output.log
+                datetime_format =
+
+                [/var/log/cfn-init.log]
+                file = /var/log/cfn-init.log
+                log_group_name = ${ProxySQLLogs}
+                log_stream_name = {instance_id}/cfn-init.log
+                datetime_format =
+
+                [/var/log/cfn-hup.log]
+                file = /var/log/cfn-hup.log
+                log_group_name = ${ProxySQLLogs}
+                log_stream_name = {instance_id}/cfn-hup.log
+                datetime_format =
+
+                [/var/log/cfn-wire.log]
+                file = /var/log/cfn-wire.log
+                log_group_name = ${ProxySQLLogs}
+                log_stream_name = {instance_id}/cfn-wire.log
+                datetime_format =
+
+                [/var/log/httpd]
+                file = /var/log/httpd/*
+                log_group_name = ${ProxySQLLogs}
+                log_stream_name = {instance_id}/httpd
+                datetime_format = %d/%b/%Y:%H:%M:%S
+
+              mode: '000444'
+              owner: root
+              group: root
+            /etc/awslogs/awscli.conf:
+              content: !Sub |
+                [plugins]
+                cwlogs = cwlogs
+                [default]
+                region = ${AWS::Region}
+              mode: '000444'
+              owner: root
+              group: root
+          commands:
+            01_create_state_directory:
+              command: mkdir -p /var/awslogs/state
+          services:
+            sysvinit:
+              awslogs:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files: /etc/awslogs/awslogs.conf
+        install_aws_ini:
+          commands:
+            install_aws_ini:
+              command: ./download_aws_ini.sh
+              cwd: /tmp
+              ignoreErrors: true
+        configure_ProxySQLserver:
+          files:
+            /home/ec2-user/proxysql.sql:
+              content: !Sub |
+                delete from mysql_servers where hostgroup_id in (10,20);
+                delete from mysql_replication_hostgroups where writer_hostgroup=10;
+                INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight,max_connections) VALUES ('${ClusterEndpoint}',10,3306,1000,2000);
+                INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight,max_connections) VALUES ('${ReaderEndpoint}',20,3306,1000,2000);
+                INSERT INTO mysql_replication_hostgroups (writer_hostgroup,reader_hostgroup,comment,check_type) VALUES (10,20,'aws-aurora','innodb_read_only');
+                LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;
+
+                delete from mysql_query_rules where rule_id in (50,51);
+                INSERT INTO mysql_query_rules (rule_id,active,match_digest,destination_hostgroup,apply) VALUES (50,1,'^SELECT.*FOR UPDATE$',10,1), (51,1,'^SELECT',20,1);
+                LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;
+
+                delete from mysql_users where username='${DatabaseUser}';
+                insert into mysql_users (username,password,active,default_hostgroup,default_schema,transaction_persistent) values ('${DatabaseUser}','${DatabasePassword}',1,10,'${DatabaseName}',1);
+                LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;
+
+                UPDATE global_variables SET variable_value='monitor' WHERE variable_name='mysql-monitor_username';
+                UPDATE global_variables SET variable_value='monitor' WHERE variable_name='mysql-monitor_password';
+                UPDATE global_variables SET variable_value='5.7' WHERE variable_name='mysql-server_version';
+                UPDATE global_variables SET variable_value='2000' WHERE variable_name IN ('mysql-monitor_connect_interval','mysql-monitor_ping_interval','mysql-monitor_read_only_interval');
+                LOAD MYSQL VARIABLES TO RUNTIME;
+                SAVE MYSQL VARIABLES TO DISK;
+              mode: '000444'
+              owner: root
+              group: root
+          commands:
+            01_configure_ProxySQLserver:
+              command: mysql -u admin -padmin -h 127.0.0.1 -P6032 main < proxysql.sql
+              cwd: /home/ec2-user
+              ignoreErrors: false
+            02_configure_ProxySQLserver:
+              command: !Sub |
+                mysql -u ${DatabaseUser} -p${DatabasePassword} -h 127.0.0.1 -P6033 -e "CREATE USER IF NOT EXISTS 'monitor'@'%' IDENTIFIED BY 'monitor';"
+              cwd: /home/ec2-user
+              ignoreErrors: false
+  JumpServer:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMALINUX]
+      InstanceType: !Ref InstanceSize
+      KeyName: !Ref keyname
+      SubnetId: 
+        Ref: SubnetPublicA
+      SecurityGroupIds: 
+        - !Ref SshFirewall
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  NetELB:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+      Subnets:
+        - !Ref SubnetPublicA
+        - !Ref SubnetPublicB
+      Type: network
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+  ELBListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties: 
+      DefaultActions:
+        - TargetGroupArn: !Ref ELBTargetGroup
+          Type: "forward"
+      LoadBalancerArn: !Ref NetELB
+      Port: 3306
+      Protocol: TCP
+  ELBTargetGroup:
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    Properties:
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      Port: 6033
+      Protocol: TCP
+      VpcId: !Ref VPC
+Outputs:
+  Endpoint:
+    Description: Database URL 
+    Value: !GetAtt NetELB.DNSName
+  JumpAddress:
+    Description: IP address of Jump server
+    Value: !GetAtt JumpServer.PublicIp
