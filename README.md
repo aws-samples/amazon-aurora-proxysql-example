@@ -40,3 +40,7 @@ You can run the following to update the stack if you change the configuration:
 
 Look for the stack output parameter `Endpoint`.  You can use `Endpoint:3306` as your
 MySql-compatible connection host.
+
+## License Summary
+
+This sample code is made available under a modified MIT license. See the LICENSE file.
