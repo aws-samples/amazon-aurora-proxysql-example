@@ -1,5 +1,7 @@
 ## Amazon Aurora ProxySQL example
 
+![Amazon Aurora ProxySQL Example](proxy-sql.png)
+
 A set of CloudFormation templates that demonstrates using ProxySQL middleware to provide a single endpoint for both the primary and read replica instances of an Amazon Aurora MySql-compatible cluster.
 
 These CloudFormation (CFN) templates deploy an Aurora RDS MySql-compatible
