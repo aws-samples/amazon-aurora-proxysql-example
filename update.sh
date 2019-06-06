@@ -71,7 +71,7 @@ aws cloudformation update-stack --stack-name $stackname \
     ParameterKey=DatabaseName,ParameterValue="proxysqlexample" \
     ParameterKey=DatabaseUser,ParameterValue="proxysqluser" \
     ParameterKey=DatabasePassword,ParameterValue="pr0xySQL01Cred" \
-    ParameterKey=DbInstanceSize,ParameterValue="db.r4.large" \
+    ParameterKey=DbInstanceSize,ParameterValue="db.r5.large" \
     ParameterKey=keyname,ParameterValue="ProxySQLDemo" \
     --tags Key=Project,Value=proxysqlblog \
     --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
