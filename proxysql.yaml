@@ -71,34 +71,42 @@ Parameters:
 
 Mappings:
   RegionMap:
-    us-east-1:
-      "AMALINUX" : "ami-1853ac65" # AMALINUX SEP 2016
-    us-east-2:
-      "AMALINUX" : "ami-71ca9114" # AMALINUX SEP 2016
-    us-west-1:
-      "AMALINUX" : "ami-de347abe" # AMALINUX SEP 2016
-    us-west-2:
-      "AMALINUX" : "ami-d874e0a0" # AMALINUX SEP 2017
     ca-central-1:
-      "AMALINUX" : "ami-eb20928f" # AMALINUX SEP 2016 v01
-    eu-west-1:
-      "AMALINUX" : "ami-d41d58a7" # AMALINUX SEP 2016
-    eu-central-1:
-      "AMALINUX" : "ami-0044b96f" # AMALINUX SEP 2016
-    eu-west-2:
-      "AMALINUX" : "ami-bfe0eadb" # AMALINUX SEP 2016 v01
-    ap-southeast-1:
-      "AMALINUX" : "ami-7243e611" # AMALINUX SEP 2016
-    ap-southeast-2:
-      "AMALINUX" : "ami-55d4e436" # AMALINUX SEP 2016
-    ap-northeast-2:
-      "AMALINUX" : "ami-a04297ce" # AMALINUX SEP 2016
-    ap-northeast-1:
-      "AMALINUX" : "ami-1a15c77b" # AMALINUX SEP 2016
-    ap-south-1:
-      "AMALINUX" : "ami-cacbbea5" # AMALINUX SEP 2016
+      "AMALINUX" : "ami-0fa94ecf2fef3420b" # AMALINUX 64-bit x86 2018.03.0
+    us-east-1:
+      "AMALINUX" : "ami-0e2ff28bfb72a4e45" # AMALINUX 64-bit x86 2018.03.0
+    us-east-2:
+      "AMALINUX" : "ami-0998bf58313ab53da" # AMALINUX 64-bit x86 2018.03.0
+    us-west-1:
+      "AMALINUX" : "ami-021bb9f371690f97a" # AMALINUX 64-bit x86 2018.03.0
+    us-west-2:
+      "AMALINUX" : "ami-079f731edfe27c29c" # AMALINUX 64-bit x86 2018.03.0
     sa-east-1:
-      "AMALINUX" : "ami-b777e4db" # AMALINUX SEP 2016
+      "AMALINUX" : "ami-05b7dbc290217250d" # AMALINUX 64-bit x86 2018.03.0
+    eu-west-1:
+      "AMALINUX" : "ami-0e61341fa75fcaa18" # AMALINUX 64-bit x86 2018.03.0
+    eu-west-2:
+      "AMALINUX" : "ami-050b8344d77081f4b" # AMALINUX 64-bit x86 2018.03.0
+    eu-west-3:
+      "AMALINUX" : "ami-053418e626d0549fc" # AMALINUX 64-bit x86 2018.03.0
+    eu-central-1:
+      "AMALINUX" : "ami-0ba441bdd9e494102" # AMALINUX 64-bit x86 2018.03.0
+    eu-north-1:
+      "AMALINUX" : "ami-01a7a49829bda9d79" # AMALINUX 64-bit x86 2018.03.0
+    me-south-1:
+      "AMALINUX" : "ami-0f9dd846ebb1d7a81" # AMALINUX 64-bit x86 2018.03.0
+    ap-east-1:
+      "AMALINUX" : "ami-7ab4f00b" # AMALINUX 64-bit x86 2018.03.0
+    ap-south-1:
+      "AMALINUX" : "ami-05695932c5299858a" # AMALINUX 64-bit x86 2018.03.0
+    ap-southeast-1:
+      "AMALINUX" : "ami-043afc2b8b6cfba5c" # AMALINUX 64-bit x86 2018.03.0
+    ap-southeast-2:
+      "AMALINUX" : "ami-01393ce9a3ca55d67" # AMALINUX 64-bit x86 2018.03.0
+    ap-northeast-1:
+      "AMALINUX" : "ami-02ddf94e5edc8e904" # AMALINUX 64-bit x86 2018.03.0
+    ap-northeast-2:
+      "AMALINUX" : "ami-0ecd78c22823e02ef" # AMALINUX 64-bit x86 2018.03.0
 Resources:
   ProxySQLLogs:
       Type: AWS::Logs::LogGroup
