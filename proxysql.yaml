@@ -174,22 +174,19 @@ Resources:
             yum:
               mysql: []
           files:
-            /tmp/install_proxysql.sh:
-              content:
-                !Sub |
-                  #!/bin/bash -xe
-
-                  wget -P /tmp/ https://github.com/sysown/proxysql/releases/download/v2.0.0-rc2/proxysql-rc2-2.0.0-1-centos7.x86_64.rpm
-
-                  #Install proxysql
-                  sudo yum install -y /tmp/proxysql-rc2-2.0.0-1-centos7.x86_64.rpm
-              mode: 000500
+            /etc/yum.repos.d/proxysql.repo:
+              content: !Sub |
+                [proxysql_repo]
+                name= ProxySQL YUM repository
+                baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.0.x/centos/6
+                gpgcheck=1
+                gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
+              mode: '000444'
               owner: root
               group: root
           commands:
             install_ProxySQLserver:
-              command: ./install_proxysql.sh
-              cwd: /tmp
+              command: "sudo yum install -y proxysql"
               ignoreErrors: false
         start_ProxySQLserver:
           services:
