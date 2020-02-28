@@ -108,6 +108,38 @@ Mappings:
     ap-northeast-2:
       "AMALINUX" : "ami-0ecd78c22823e02ef" # AMALINUX 64-bit x86 2018.03.0
 Resources:
+  LogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: LogRolePolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:Create*
+            - logs:PutLogEvents
+            - s3:GetObject
+            Resource:
+            - arn:aws:logs:*:*:*
+            - arn:aws:s3:::*
+  LogRoleInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: LogRole
   ProxySQLLogs:
       Type: AWS::Logs::LogGroup
       DeletionPolicy: Retain
@@ -144,6 +176,7 @@ Resources:
     Properties:
       ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMALINUX]
       InstanceType: !Ref InstanceSize
+      IamInstanceProfile: !Ref LogRoleInstanceProfile
       KeyName: !Ref keyname
       SecurityGroups:
         - !Ref ProxySQLFirewall
